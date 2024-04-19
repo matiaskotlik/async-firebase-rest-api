@@ -16,9 +16,6 @@
 
 <div align="center">
 
-   <a href="https://github.com/matiaskotlik/async-firebase-rest-api/actions/workflows/build.yml"> 
-      <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/matiaskotlik/async-firebase-rest-api/build.yml?logo=GitHub">
-   </a>
    <a href="https://github.com/matiaskotlik/async-firebase-rest-api/actions/workflows/tests.yml">
       <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/matiaskotlik/async-firebase-rest-api/tests.yml?label=tests&logo=Pytest">
    </a>

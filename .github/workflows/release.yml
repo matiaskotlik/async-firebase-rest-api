@@ -1,24 +1,12 @@
 name: release
 
 on:
-    workflow_run:
-        workflows: [ "tests" ]
-        branches: [ "main" ]
-        types:
-            - completed
-    
     workflow_dispatch:
 
 jobs:
 
     github-release:
         runs-on: ubuntu-latest
-
-        # Workflow will run only if the trigger workflow completed with success.
-        if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
-        environment:
-            name: Staging
 
         steps:
             -   uses: actions/checkout@v2
@@ -27,10 +15,7 @@ jobs:
                 id: changelog
                 uses: TriPSs/conventional-changelog-action@v3.7.1
                 with:
-                    github-token: ${{ secrets.CHANGELOG_RELEASE }}
-                    git-user-name: Google GitHub Actions Bot
-                    git-user-email: 72759630+google-github-actions-bot@users.noreply.github.com
-                    git-message: 'release: {version}'
+                    github-token: ${{ secrets.GITHUB_TOKEN }}
                     version-file: ./pyproject.toml
                     version-path: project.version
                     release-count: 0
@@ -39,8 +24,9 @@ jobs:
                 uses: actions/create-release@v1
                 if: ${{ steps.changelog.outputs.skipped == 'false' }}
                 env:
-                    GITHUB_TOKEN: ${{ secrets.CHANGELOG_RELEASE }}
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 with:
                     tag_name: ${{ steps.changelog.outputs.tag }}
                     release_name: ${{ steps.changelog.outputs.tag }}
                     body: ${{ steps.changelog.outputs.clean_changelog }}
+                    draft: true
