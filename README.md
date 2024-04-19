@@ -93,7 +93,7 @@ db = app.database()
 # Data to save in database
 data = {
    "name": "Robert Downey Jr.",
-   "email": user.get('email')
+   "email": await user.get('email')
 }
 
 # Store data to Firebase Database
