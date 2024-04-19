@@ -1,10 +1,19 @@
-## [1.11.1](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v1.11.0...v1.11.1) (2024-04-19)
+# [2.0.0](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v1.11.0...v2.0.0) (2024-04-19)
 
 
 ### Bug Fixes
 
-* gha ([9f099a9](https://github.com/matiaskotlik/async-firebase-rest-api/commit/9f099a91932caf9010815c895356c96e5d712c4b))
-* update readme ([f7c7cc1](https://github.com/matiaskotlik/async-firebase-rest-api/commit/f7c7cc1c75d60117c05c63574bfccd9f97ced606))
+* gha and readme ([071950a](https://github.com/matiaskotlik/async-firebase-rest-api/commit/071950a35038c6a4d3b30ffaaa49e5db40f6a1ed))
+
+
+### Features
+
+* async api ([a3a6386](https://github.com/matiaskotlik/async-firebase-rest-api/commit/a3a6386c1fb3f3c137a68b8c95572874bd3d1cff))
+
+
+### BREAKING CHANGES
+
+* async api
 
 
 
