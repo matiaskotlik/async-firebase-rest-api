@@ -20,9 +20,9 @@ project_config = toml.load('..//pyproject.toml')
 
 # -- Project information -----------------------------------------------------
 
-project = 'firebase-rest-api'
-copyright = '2022, Asif Arman Rahman'
-author = 'Asif Arman Rahman'
+project = 'async-firebase-rest-api'
+copyright = '2022, Asif Arman Rahman; 2024, Matias Kotlik'
+author = 'Asif Arman Rahman, Matias Kotlik'
 
 # The full version, including alpha/beta/rc tags
 release = project_config['project']['version']

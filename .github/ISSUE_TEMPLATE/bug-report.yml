@@ -18,7 +18,7 @@ body:
             description: |
                 Please search to see if an issue already exists for the bug you encountered.
 
-                -   https://github.com/AsifArmanRahman/firebase-rest-api/issues
+                -   https://github.com/matiaskotlik/async-firebase-rest-api/issues
             options:
                 -   label: I have searched the existing issues
                     required: true

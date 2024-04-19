@@ -36,7 +36,7 @@ class Auth:
 	:type credentials: :class:`~google.oauth2.service_account.Credentials`
 	:param credentials: Service Account Credentials
 
-	:type requests: :class:`~requests.Session`
+	:type requests: :class:`~httpx.AsyncClient`
 	:param requests: Session to make HTTP requests
 
 	:type client_secret: str or dict
@@ -78,7 +78,7 @@ class Auth:
 		"""
 		return self.create_authentication_uri('facebook.com')
 
-	def create_authentication_uri(self, provider_id):
+	async def create_authentication_uri(self, provider_id):
 		""" Creates an authentication URI for the given social
 		provider.
 
@@ -123,7 +123,7 @@ class Auth:
 			data['customParameter'] = {"code_challenge": code_challenge, "code_challenge_method": 'S256', "nonce": sha256(self.__nonce.encode('utf')).hexdigest()}
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		request_object = self.requests.post(request_ref, headers=headers, json=data)
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
@@ -132,7 +132,7 @@ class Auth:
 
 		return request_object.json()['authUri']
 
-	def sign_in_with_email_and_password(self, email, password):
+	async def sign_in_with_email_and_password(self, email, password):
 		""" Sign in a user with an email and password.
 
 		| For more details:
@@ -153,14 +153,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"email": email, "password": password, "returnSecureToken": True})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"email": email, "password": password, "returnSecureToken": True}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return _token_expire_time(request_object.json())
 
-	def sign_in_anonymous(self):
+	async def sign_in_anonymous(self):
 		""" Sign In Anonymously.
 
 		| For more details:
@@ -175,8 +175,8 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"returnSecureToken": True})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"returnSecureToken": True}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
@@ -225,7 +225,7 @@ class Auth:
 
 		return jwt.generate_jwt(payload, private_key, "RS256", exp, other_headers={'kid': self.credentials.signer._key_id})
 
-	def sign_in_with_custom_token(self, token):
+	async def sign_in_with_custom_token(self, token):
 		""" Exchange custom token for an ID and refresh token.
 
 		| For more details:
@@ -244,14 +244,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyCustomToken?key={0}".format(self.api_key)  # noqa
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"returnSecureToken": True, "token": token})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"returnSecureToken": True, "token": token}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return _token_expire_time(request_object.json())
 
-	def refresh(self, refresh_token):
+	async def refresh(self, refresh_token):
 		""" Refresh a Firebase ID token.
 
 		| For more details:
@@ -269,8 +269,8 @@ class Auth:
 		request_ref = "https://securetoken.googleapis.com/v1/token?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"grantType": "refresh_token", "refreshToken": refresh_token})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"grantType": "refresh_token", "refreshToken": refresh_token}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 		request_object_json = request_object.json()
@@ -285,7 +285,7 @@ class Auth:
 
 		return _token_expire_time(user)
 
-	def get_account_info(self, id_token):
+	async def get_account_info(self, id_token):
 		""" Fetch user's stored account information.
 
 		| For more details:
@@ -304,14 +304,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"idToken": id_token})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"idToken": id_token}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def send_email_verification(self, id_token):
+	async def send_email_verification(self, id_token):
 		""" Send an email verification to verify email ownership.
 
 		| For more details:
@@ -330,14 +330,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/getOobConfirmationCode?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"requestType": "VERIFY_EMAIL", "idToken": id_token})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"requestType": "VERIFY_EMAIL", "idToken": id_token}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def send_password_reset_email(self, email):
+	async def send_password_reset_email(self, email):
 		""" Send a password reset email.
 
 		| For more details:
@@ -355,14 +355,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/getOobConfirmationCode?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"requestType": "PASSWORD_RESET", "email": email})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"requestType": "PASSWORD_RESET", "email": email}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def verify_password_reset_code(self, reset_code, new_password):
+	async def verify_password_reset_code(self, reset_code, new_password):
 		""" Reset password using code.
 
 		| For more details:
@@ -384,14 +384,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/resetPassword?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"oobCode": reset_code, "newPassword": new_password})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"oobCode": reset_code, "newPassword": new_password}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def create_user_with_email_and_password(self, email, password):
+	async def create_user_with_email_and_password(self, email, password):
 		""" Create a new user with email and password.
 
 		| For more details:
@@ -412,14 +412,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"email": email, "password": password, "returnSecureToken": True})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"email": email, "password": password, "returnSecureToken": True}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def delete_user_account(self, id_token):
+	async def delete_user_account(self, id_token):
 		""" Delete an existing user.
 
 		| For more details:
@@ -435,14 +435,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/deleteAccount?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"idToken": id_token})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"idToken": id_token}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def sign_in_with_oauth_credential(self, oauth2callback_url):
+	async def sign_in_with_oauth_credential(self, oauth2callback_url):
 		""" Sign In With OAuth credential.
 
 		| For more details:
@@ -477,13 +477,13 @@ class Auth:
 		}
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		request_object = self.requests.post(request_ref, headers=headers, json=data)
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return _token_expire_time(request_object.json())
 
-	def _token_from_auth_url(self, url):
+	async def _token_from_auth_url(self, url):
 		""" Fetch tokens using the authorization code from given URL.
 
 
@@ -513,7 +513,7 @@ class Auth:
 			data['code_verifier'] = self.__code_verifier
 
 		headers = {"content-type": "application/x-www-form-urlencoded; charset=UTF-8"}
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
@@ -522,7 +522,7 @@ class Auth:
 			'value': request_object.json()['id_token'],
 		}
 	
-	def change_email(self, id_token, email):
+	async def change_email(self, id_token, email):
 		""" Changes a user's email
 
 		| For more details:
@@ -543,14 +543,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/setAccountInfo?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"idToken": id_token, "email": email, "returnSecureToken": True})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"idToken": id_token, "email": email, "returnSecureToken": True}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 	
-	def change_password(self, id_token, password):
+	async def change_password(self, id_token, password):
 		""" Changes a user's password
 
 		| For more details:
@@ -571,14 +571,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/setAccountInfo?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"idToken": id_token, "password": password, "returnSecureToken": True})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"idToken": id_token, "password": password, "returnSecureToken": True}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def update_profile(self, id_token, display_name=None, photo_url=None, delete_attribute=None):
+	async def update_profile(self, id_token, display_name=None, photo_url=None, delete_attribute=None):
 		""" Update a user's profile (display name / photo URL).
 
 		| For more details:
@@ -607,14 +607,14 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/setAccountInfo?key={0}".format(self.api_key)
 
 		headers = {"content-type": "application/json; charset=UTF-8"}
-		data = json.dumps({"idToken": id_token, "displayName": display_name, "photoURL": photo_url, "deleteAttribute": delete_attribute, "returnSecureToken": True})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"idToken": id_token, "displayName": display_name, "photoURL": photo_url, "deleteAttribute": delete_attribute, "returnSecureToken": True}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def set_custom_user_claims(self, user_id, custom_claims):
+	async def set_custom_user_claims(self, user_id, custom_claims):
 		""" Add or remove custom claims from/to an existing user.
 
 		| For more details:
@@ -638,12 +638,12 @@ class Auth:
 
 		headers = {"Authorization": "Bearer " + access_token, "content-type": "application/json; charset=UTF-8"}
 
-		data = json.dumps({"localId": user_id, "customAttributes":json.dumps(custom_claims), "returnSecureToken": False})
-		request_object = self.requests.post(request_ref, headers=headers, data=data)
+		data = {"localId": user_id, "customAttributes":json.dumps(custom_claims), "returnSecureToken": False}
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
-	def verify_id_token(self, id_token):
+	async def verify_id_token(self, id_token):
 		""" Decode Firebase Auth ID token.
 
 		| For more details:
@@ -660,7 +660,7 @@ class Auth:
 
 		header, _ = jwt.process_jwt(id_token)
 
-		response = self.requests.get('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com')
+		response = await self.requests.get('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com')
 
 		pub_pem = response.json()[header['kid']]
 

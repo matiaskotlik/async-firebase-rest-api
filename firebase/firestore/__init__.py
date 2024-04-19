@@ -36,7 +36,7 @@ class Firestore:
 	:type project_id: str
 	:param project_id: ``projectId`` from Firebase configuration
 
-	:type requests: :class:`~requests.Session`
+	:type requests: :class:`~httpx.AsyncClient`
 	:param requests: Session to make HTTP requests
 	"""
 
@@ -79,7 +79,7 @@ class Collection:
 	:type project_id: str
 	:param project_id: ``projectId`` from Firebase configuration
 
-	:type requests: :class:`~requests.Session`
+	:type requests: :class:`~httpx.AsyncClient`
 	:param requests: Session to make HTTP requests
 	"""
 
@@ -157,7 +157,7 @@ class Collection:
 
 		return _query
 
-	def add(self, data, token=None):
+	async def add(self, data, token=None):
 		""" Create a document in the Firestore database with the
 		provided data using an auto generated ID for the document.
 
@@ -190,10 +190,10 @@ class Collection:
 
 			if token:
 				headers = {"Authorization": "Firebase " + token}
-				response = self._requests.post(req_ref, headers=headers, json=_to_datastore(data))
+				response = await self._requests.post(req_ref, headers=headers, json=_to_datastore(data))
 
 			else:
-				response = self._requests.post(req_ref, json=_to_datastore(data))
+				response = await self._requests.post(req_ref, json=_to_datastore(data))
 
 			raise_detailed_error(response)
 
@@ -252,7 +252,7 @@ class Collection:
 
 		return self
 
-	def get(self, token=None):
+	async def get(self, token=None):
 		""" Returns a list of dict's containing document ID and the
 		data stored within them.
 
@@ -294,16 +294,16 @@ class Collection:
 				headers = {"Authorization": "Firebase " + token}
 
 				if body:
-					response = self._requests.post(req_ref, headers=headers, json=body)
+					response = await self._requests.post(req_ref, headers=headers, json=body)
 				else:
-					response = self._requests.get(req_ref, headers=headers)
+					response = await self._requests.get(req_ref, headers=headers)
 
 			else:
 
 				if body:
-					response = self._requests.post(req_ref, json=body)
+					response = await self._requests.post(req_ref, json=body)
 				else:
-					response = self._requests.get(req_ref)
+					response = await self._requests.get(req_ref)
 
 			raise_detailed_error(response)
 
@@ -329,7 +329,7 @@ class Collection:
 
 		return docs
 
-	def list_of_documents(self, token=None):
+	async def list_of_documents(self, token=None):
 		""" List all sub-documents of the current collection.
 
 		:type token: str
@@ -360,10 +360,10 @@ class Collection:
 
 			if token:
 				headers = {"Authorization": "Firebase " + token}
-				response = self._requests.get(req_ref, headers=headers)
+				response = await self._requests.get(req_ref, headers=headers)
 
 			else:
-				response = self._requests.get(req_ref)
+				response = await self._requests.get(req_ref)
 
 			raise_detailed_error(response)
 
@@ -570,7 +570,7 @@ class Document:
 	:type project_id: str
 	:param project_id: ``projectId`` from Firebase configuration
 
-	:type requests: :class:`~requests.Session`
+	:type requests: :class:`~httpx.AsyncClient`
 	:param requests: Session to make HTTP requests
 	"""
 
@@ -605,7 +605,7 @@ class Document:
 		self._path.append(collection_id)
 		return Collection(self._path, api_key=self._api_key, credentials=self._credentials, project_id=self._project_id, requests=self._requests)
 
-	def delete(self, token=None):
+	async def delete(self, token=None):
 		""" Deletes the current document from firestore.
 
 		| For more details:
@@ -636,14 +636,14 @@ class Document:
 
 			if token:
 				headers = {"Authorization": "Firebase " + token}
-				response = self._requests.delete(req_ref, headers=headers)
+				response = await self._requests.delete(req_ref, headers=headers)
 
 			else:
-				response = self._requests.delete(req_ref)
+				response = await self._requests.delete(req_ref)
 
 			raise_detailed_error(response)
 
-	def get(self, field_paths=None, token=None):
+	async def get(self, field_paths=None, token=None):
 		""" Read data from a document in firestore.
 
 
@@ -685,16 +685,16 @@ class Document:
 
 			if token:
 				headers = {"Authorization": "Firebase " + token}
-				response = self._requests.get(req_ref, headers=headers)
+				response = await self._requests.get(req_ref, headers=headers)
 
 			else:
-				response = self._requests.get(req_ref)
+				response = await self._requests.get(req_ref)
 
 			raise_detailed_error(response)
 
 			return _from_datastore(response.json())
 
-	def set(self, data, token=None):
+	async def set(self, data, token=None):
 		""" Add data to a document in firestore.
 
 		| For more details:
@@ -736,14 +736,14 @@ class Document:
 
 			if token:
 				headers = {"Authorization": "Firebase " + token}
-				response = self._requests.post(req_ref, headers=headers, json=body)
+				response = await self._requests.post(req_ref, headers=headers, json=body)
 
 			else:
-				response = self._requests.post(req_ref, json=body)
+				response = await self._requests.post(req_ref, json=body)
 
 			raise_detailed_error(response)
 
-	def update(self, data, token=None):
+	async def update(self, data, token=None):
 		""" Update stored data inside a document in firestore.
 
 
@@ -774,10 +774,10 @@ class Document:
 
 			if token:
 				headers = {"Authorization": "Firebase " + token}
-				response = self._requests.post(req_ref, headers=headers, json=body)
+				response = await self._requests.post(req_ref, headers=headers, json=body)
 
 			else:
-				response = self._requests.post(req_ref, json=body)
+				response = await self._requests.post(req_ref, json=body)
 
 			raise_detailed_error(response)
 

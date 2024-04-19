@@ -7,44 +7,36 @@
 
 import pytest
 
-from tests.tools import initiate_app_with_service_account_file, make_auth, make_db, make_storage
+async def test_setup_auth(client_app):
+	auth = client_app.auth()
+	user = await auth.sign_in_anonymous()
+
+	assert await auth.delete_user_account(user['idToken'])
 
 
-def test_initiate_app_with_service_account_file():
-	with pytest.raises(FileNotFoundError) as exc_info:
-		initiate_app_with_service_account_file()
-	assert "No such file or directory: 'firebase-adminsdk.json'" in str(exc_info.value)
+async def test_setup_auth_admin(service_app):
+	auth = service_app.auth()
+	user = await auth.sign_in_anonymous()
+
+	assert await auth.delete_user_account(user['idToken'])
 
 
-def test_setup_auth():
-	auth = make_auth()
-	user = auth.sign_in_anonymous()
+async def test_setup_db(service_app):
+	db = service_app.database().child('firebase_tests')
 
-	assert auth.delete_user_account(user['idToken'])
-
-
-def test_setup_auth_admin():
-	auth = make_auth(True)
-	user = auth.sign_in_anonymous()
-
-	assert auth.delete_user_account(user['idToken'])
+	assert await db.get()
 
 
-def test_setup_db():
-	db = make_db(True)
-
-	assert db.get()
-
-
-def test_setup_storage():
-	storage = make_storage()
+async def test_setup_storage(client_app):
+	storage = client_app.storage()
 
 	with pytest.raises(AttributeError) as exc_info:
-		storage.list_files()
+		_ = [f async for f in storage.list_files()]
 	assert 'bucket' in str(exc_info.value)
 
 
-def test_setup_storage_admin():
-	storage = make_storage(True)
+async def test_setup_storage_admin(service_app):
+	storage = service_app.storage()
 
-	assert storage.list_files()
+	async for _ in storage.list_files():
+		break

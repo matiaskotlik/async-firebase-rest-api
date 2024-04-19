@@ -19,10 +19,10 @@ from random import randrange
 from urllib.parse import urlencode
 from google.auth.transport.requests import Request
 
-from ._stream import Stream
+from ._custom_sse_client import iter_sse_retrying
 from ._db_convert import FirebaseResponse
-from firebase._exception import raise_detailed_error
 from ._db_convert import convert_to_firebase, convert_list_to_firebase
+from .._exception import raise_detailed_error
 
 
 class Database:
@@ -35,7 +35,7 @@ class Database:
 	:type database_url: str
 	:param database_url: ``databaseURL`` from Firebase configuration.
 
-	:type requests: :class:`~requests.Session`
+	:type requests: :class:`~httpx.AsyncClient`
 	:param requests: Session to make HTTP requests.
 	"""
 
@@ -346,7 +346,7 @@ class Database:
 
 		return headers
 
-	def get(self, token=None, json_kwargs={}):
+	async def get(self, token=None, json_kwargs={}):
 		""" Read data from database.
 
 		| For more details:
@@ -381,7 +381,7 @@ class Database:
 		headers = self.build_headers(token)
 
 		# do request
-		request_object = self.requests.get(request_ref, headers=headers)
+		request_object = await self.requests.get(request_ref, headers=headers)
 
 		raise_detailed_error(request_object)
 		request_dict = request_object.json(**json_kwargs)
@@ -413,7 +413,7 @@ class Database:
 
 		return FirebaseResponse(convert_to_firebase(sorted_response), query_key)
 
-	def push(self, data, token=None, json_kwargs={}):
+	async def push(self, data, token=None):
 		""" Add data to database.
 
 		This method adds a Firebase Push ID at the end of the specified 
@@ -437,11 +437,6 @@ class Database:
 		:param token: (Optional) Firebase Auth User ID Token, defaults 
 			to :data:`None`.
 
-		:type json_kwargs: dict
-		:param json_kwargs: (Optional) Keyword arguments to send to 
-			:func:`json.dumps` method for serialization of data, 
-			defaults to :data:`{}` (empty :class:`dict` object).
-
 
 		:return: Child key (Firebase Push ID) name of the data.
 		:rtype: dict
@@ -452,13 +447,13 @@ class Database:
 		self.path = ""
 
 		headers = self.build_headers(token)
-		request_object = self.requests.post(request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
+		request_object = await self.requests.post(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def set(self, data, token=None, json_kwargs={}):
+	async def set(self, data, token=None):
 		""" Add data to database.
 
 		This method writes the data in database in the specified 
@@ -482,11 +477,6 @@ class Database:
 		:param token: (Optional) Firebase Auth User ID Token, defaults 
 			to :data:`None`.
 
-		:type json_kwargs: dict
-		:param json_kwargs: (Optional) Keyword arguments to send to 
-			:func:`json.dumps` method for serialization of data, 
-			defaults to :data:`{}` (empty :class:`dict` object).
-
 
 		:return: Successful attempt returns the ``data`` specified to 
 			add to database.
@@ -498,13 +488,13 @@ class Database:
 		self.path = ""
 
 		headers = self.build_headers(token)
-		request_object = self.requests.put(request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
+		request_object = await self.requests.put(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def update(self, data, token=None, json_kwargs={}):
+	async def update(self, data, token=None):
 		""" Update stored data of database.
 
 		| For more details:
@@ -524,11 +514,6 @@ class Database:
 		:param token: (Optional) Firebase Auth User ID Token, defaults 
 			to :data:`None`.
 
-		:type json_kwargs: dict
-		:param json_kwargs: (Optional) Keyword arguments to send to 
-			:func:`json.dumps` method for serialization of data, 
-			defaults to :data:`{}` (empty :class:`dict` object).
-
 
 		:return: Successful attempt returns the data specified to 
 			update.
@@ -540,13 +525,13 @@ class Database:
 		self.path = ""
 
 		headers = self.build_headers(token)
-		request_object = self.requests.patch(request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
+		request_object = await self.requests.patch(request_ref, headers=headers, json=data)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def remove(self, token=None):
+	async def remove(self, token=None):
 		""" Delete data from database.
 
 		| For more details:
@@ -573,16 +558,16 @@ class Database:
 		self.path = ""
 
 		headers = self.build_headers(token)
-		request_object = self.requests.delete(request_ref, headers=headers)
+		request_object = await self.requests.delete(request_ref, headers=headers)
 
 		raise_detailed_error(request_object)
 
 		return request_object.json()
 
-	def stream(self, stream_handler, token=None, stream_id=None, is_async=True):
+	async def stream(self, token=None):
 		request_ref = self.build_request_url(token)
-
-		return Stream(request_ref, stream_handler, self.build_headers, stream_id, is_async)
+		async for sse in iter_sse_retrying(request_ref, self.build_headers):
+			yield sse
 
 	def check_token(self, database_url, path, token):
 		""" Builds Request URL to write/update/remove data.
@@ -688,7 +673,7 @@ class Database:
 
 		return FirebaseResponse(convert_to_firebase(data), origin.key())
 
-	def get_etag(self, token=None):
+	async def get_etag(self, token=None):
 		""" Fetches Firebase ETag at a specified location.
 
 		| For more details:
@@ -716,13 +701,13 @@ class Database:
 		headers = self.build_headers(token)
 		# extra header to get ETag
 		headers['X-Firebase-ETag'] = 'true'
-		request_object = self.requests.get(request_ref, headers=headers)
+		request_object = await self.requests.get(request_ref, headers=headers)
 
 		raise_detailed_error(request_object)
 
 		return request_object.headers['ETag']
 
-	def conditional_set(self, data, etag, token=None, json_kwargs={}):
+	async def conditional_set(self, data, etag, token=None):
 		""" Conditionally add data to database.
 
 		| For more details:
@@ -766,7 +751,7 @@ class Database:
 		headers = self.build_headers(token)
 		headers['if-match'] = etag
 
-		request_object = self.requests.put(request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
+		request_object = await self.requests.put(request_ref, headers=headers, json=data)
 
 		# ETag didn't match, so we should return the correct one for the user to try again
 		if request_object.status_code == 412:
@@ -776,7 +761,7 @@ class Database:
 
 		return request_object.json()
 
-	def conditional_remove(self, etag, token=None):
+	async def conditional_remove(self, etag, token=None):
 		""" Conditionally delete data from database.
 
 		| For more details:
@@ -804,7 +789,7 @@ class Database:
 
 		headers = self.build_headers(token)
 		headers['if-match'] = etag
-		request_object = self.requests.delete(request_ref, headers=headers)
+		request_object = await self.requests.delete(request_ref, headers=headers)
 
 		# ETag didn't match, so we should return the correct one for the user to try again
 		if request_object.status_code == 412:

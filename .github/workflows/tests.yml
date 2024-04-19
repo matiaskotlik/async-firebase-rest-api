@@ -2,12 +2,15 @@ name: tests
 
 # Controls when the workflow will run
 on:
-    # Triggers the workflow after 'Build' workflow completes running
-    workflow_run:
-        workflows: [ "Build" ]
+    # Triggers the workflow on push or pull request events but only for the "main" branch
+    push:
         branches: [ "main" ]
-        types:
-            - completed
+        paths-ignore:
+            - 'docs/**'
+    pull_request:
+        branches: [ "main" ]
+        paths-ignore:
+            - 'docs/**'
 
     # Allows you to run this workflow manually from the Actions tab
     workflow_dispatch:
@@ -16,7 +19,7 @@ on:
 jobs:
 
     # This workflow contains a single job called "tests"
-    on_success:
+    tests:
 
         # The type of runner that the job will run on
         runs-on: ubuntu-latest
@@ -74,29 +77,3 @@ jobs:
                     fail_ci_if_error: true
                     files: cov.xml
                     flags: pytest
-
-    on_faliure:
-
-        # The type of runner that the job will run on
-        runs-on: ubuntu-latest
-
-        # Workflow will run only if the trigger workflow completed with failure.
-        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
-        environment:
-            name: Development
-
-        # Steps represent a sequence of tasks that will be executed as part of the job
-        steps:
-
-            # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-            -   uses: actions/checkout@v3
-
-            -   name: Set up Python 3.9
-                uses: actions/setup-python@v3
-                with:
-                    python-version: 3.9
-                    cache: pip
-
-            -   name: Force Fail
-                run: |
-                    exit 1

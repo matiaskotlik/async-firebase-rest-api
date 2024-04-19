@@ -11,26 +11,54 @@ A simple python wrapper for Google's `Firebase Cloud Storage REST API`_
 .. _Firebase Cloud Storage REST API:
 	https://firebase.google.com/docs/reference/rest/storage/rest
 """
-
+import asyncio
 import datetime
 from google.cloud import storage
 from urllib.parse import quote
+import requests
 
 from firebase._exception import raise_detailed_error
 
 
+def upload_file(url, file_object, headers=None):
+	request_object = requests.post(url, headers=headers, data=file_object)
+	raise_detailed_error(request_object)
+	return request_object.json()
+
+
+def download_file(url, filename, headers=None):
+	""" Download file from url.
+
+	:type url: str
+	:param url: URL of the file to be downloaded.
+
+	:type headers: dict
+	:param headers: Headers to be sent with the request.
+
+	:type filename: str
+	:param filename: File name to be downloaded as.
+	"""
+
+	r = requests.get(url, stream=True, headers=headers)
+	raise_detailed_error(r)
+
+	with open(filename, 'wb') as f:
+		for chunk in r:
+			f.write(chunk)
+
+
 class Storage:
-	""" Firebase Cloud Storage Service 
+	""" Firebase Cloud Storage Service
 
 	:type credentials:
 		:class:`~google.oauth2.service_account.Credentials`
 	:param credentials: Service Account Credentials.
 
-	:type requests: :class:`~requests.Session`
+	:type requests: :class:`~httpx.AsyncClient`
 	:param requests: Session to make HTTP requests.
 
 	:type storage_bucket: str
-	:param storage_bucket: ``storageBucket`` from Firebase 
+	:param storage_bucket: ``storageBucket`` from Firebase
 		configuration.
 	"""
 
@@ -71,14 +99,14 @@ class Storage:
 
 		return self
 
-	def put(self, file, token=None):
+	async def put(self, file, token=None):
 		""" Upload file to storage.
 
 		| For more details:
 		| |upload_files|_
 
 		.. |upload_files| replace::
-			Firebase Documentation | Upload files with Cloud Storage on 
+			Firebase Documentation | Upload files with Cloud Storage on
 			Web
 
 		.. _upload_files:
@@ -89,7 +117,7 @@ class Storage:
 		:param file: Local path to file to upload.
 
 		:type token: str
-		:param token: (Optional) Firebase Auth User ID Token, defaults 
+		:param token: (Optional) Firebase Auth User ID Token, defaults
 			to :data:`None`.
 
 
@@ -110,35 +138,27 @@ class Storage:
 
 		if token:
 			headers = {"Authorization": "Firebase " + token}
-			request_object = self.requests.post(request_ref, headers=headers, data=file_object)
-
-			raise_detailed_error(request_object)
-
-			return request_object.json()
+			return await asyncio.get_event_loop().run_in_executor(
+				None, upload_file, request_ref, file_object, headers)
 
 		elif self.credentials:
 			blob = self.bucket.blob(path)
-
-			if isinstance(file, str):
-				return blob.upload_from_filename(filename=file)
-			else:
-				return blob.upload_from_file(file_obj=file)
+			upload_func = blob.upload_from_filename if isinstance(file, str) else blob.upload_from_file
+			return await asyncio.get_event_loop().run_in_executor(
+				None, upload_func, file)
 
 		else:
-			request_object = self.requests.post(request_ref, data=file_object)
+			return await asyncio.get_event_loop().run_in_executor(
+				None, upload_file, request_ref, file_object)
 
-			raise_detailed_error(request_object)
-
-			return request_object.json()
-
-	def delete(self, token=None):
+	async def delete(self, token=None):
 		""" Delete file from storage.
 
 		| For more details:
 		| |delete_a_file|_
 
 		.. |delete_a_file| replace::
-			Firebase Documentation | Delete files with Cloud Storage on 
+			Firebase Documentation | Delete files with Cloud Storage on
 			Web
 
 		.. _delete_a_file:
@@ -146,7 +166,7 @@ class Storage:
 
 
 		:type token: str
-		:param token: (Optional) Firebase Auth User ID Token, defaults 
+		:param token: (Optional) Firebase Auth User ID Token, defaults
 			to :data:`None`.
 		"""
 
@@ -159,26 +179,26 @@ class Storage:
 			path = path[1:]
 
 		if self.credentials:
-			self.bucket.delete_blob(path)
+			await asyncio.get_event_loop().run_in_executor(None, self.bucket.delete_blob, path)
 		else:
 			request_ref = self.storage_bucket + "/o?name={0}".format(path)
 
 			if token:
 				headers = {"Authorization": "Firebase " + token}
-				request_object = self.requests.delete(request_ref, headers=headers)
+				request_object = await self.requests.delete(request_ref, headers=headers)
 			else:
-				request_object = self.requests.delete(request_ref)
+				request_object = await self.requests.delete(request_ref)
 
 			raise_detailed_error(request_object)
 
-	def download(self, filename, token=None):
+	async def download(self, filename, token=None):
 		""" Download file from storage.
 
 		| For more details:
 		| |download_data_via_url|_
 
 		.. |download_data_via_url| replace::
-			Firebase Documentation | Download files with Cloud Storage 
+			Firebase Documentation | Download files with Cloud Storage
 			on Web
 
 		.. _download_data_via_url:
@@ -189,7 +209,7 @@ class Storage:
 		:param filename: File name to be downloaded as.
 
 		:type token: str
-		:param token: (Optional) Firebase Auth User ID Token, defaults 
+		:param token: (Optional) Firebase Auth User ID Token, defaults
 			to :data:`None`.
 		"""
 
@@ -203,28 +223,19 @@ class Storage:
 			if path.startswith('/'):
 				path = path[1:]
 
-			blob = self.bucket.get_blob(path)
+			blob = await asyncio.get_event_loop().run_in_executor(None, self.bucket.get_blob, path)
 			if blob is not None:
-				blob.download_to_filename(filename)
+				await asyncio.get_event_loop().run_in_executor(None, blob.download_to_filename, filename)
 
 		elif token:
 			headers = {"Authorization": "Firebase " + token}
-			r = self.requests.get(self.get_url(token), stream=True, headers=headers)
-
-			if r.status_code == 200:
-				with open(filename, 'wb') as f:
-					for chunk in r:
-						f.write(chunk)
-
+			await asyncio.get_event_loop().run_in_executor(
+				None, download_file, await self.get_url(token), filename, headers)
 		else:
-			r = self.requests.get(self.get_url(token), stream=True)
+			await asyncio.get_event_loop().run_in_executor(
+				None, download_file, await self.get_url(), filename)
 
-			if r.status_code == 200:
-				with open(filename, 'wb') as f:
-					for chunk in r:
-						f.write(chunk)
-
-	def get_url(self, token=None, expiration_hour=24):
+	async def get_url(self, token=None, expiration_hour=24):
 		""" Fetches URL for file.
 
 
@@ -259,7 +270,7 @@ class Storage:
 			# retrieve download tokens first
 			headers = {"Authorization": "Firebase " + token}
 			request_ref = "{0}/o/{1}".format(self.storage_bucket, quote(path, safe=''))
-			request_object = self.requests.get(request_ref, headers=headers)
+			request_object = await self.requests.get(request_ref, headers=headers)
 
 			raise_detailed_error(request_object)
 
@@ -267,14 +278,14 @@ class Storage:
 
 		return "{0}/o/{1}?alt=media".format(self.storage_bucket, quote(path, safe=''))
 
-	def list_files(self):
+	async def list_files(self):
 		""" List of all files in storage.
 
 		| for more details:
 		| |list_all_files|_
 
 		.. |list_all_files| replace::
-			Firebase Documentation | List files with Cloud Storage on 
+			Firebase Documentation | List files with Cloud Storage on
 			Web
 
 		.. _list_all_files:
@@ -284,5 +295,8 @@ class Storage:
 		:return: list of :class:`~gcloud.storage.blob.Blob`
 		:rtype: :class:`~gcloud.storage.bucket._BlobIterator`
 		"""
-
-		return self.bucket.list_blobs()
+		# to_thread errors if StopIteration raised in it. So we use a sentinel to detect the end
+		done = object()
+		it = self.bucket.list_blobs()
+		while (value := await asyncio.to_thread(next, it, done)) is not done:
+			yield value

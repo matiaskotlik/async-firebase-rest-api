@@ -5,33 +5,45 @@
 
 
 import pytest
+import asyncio
 
-from tests.tools import make_auth, make_db, make_ds, make_storage
+from firebase import initialize_app
+from tests import config
 from tests.config import (
 	TEST_USER_EMAIL, TEST_USER_PASSWORD,
 	TEST_USER_EMAIL_2, TEST_USER_PASSWORD_2
 )
 
+@pytest.fixture(scope='session')
+def event_loop():
+	loop = asyncio.get_event_loop()
+	loop.close = lambda: None
+	yield loop
 
 @pytest.fixture(scope='session')
-def auth():
-	return make_auth()
-
-
-@pytest.fixture(scope='session')
-def auth_admin():
-	return make_auth(True)
-
+async def client_app():
+	yield initialize_app(config.SIMPLE_CONFIG)
 
 @pytest.fixture(scope='session')
-def db():
+async def service_app():
+	yield initialize_app(config.SERVICE_CONFIG)
+
+@pytest.fixture(scope='session')
+def auth(client_app):
+	return client_app.auth()
+
+@pytest.fixture(scope='session')
+def auth_admin(service_app):
+	return service_app.auth()
+
+@pytest.fixture(scope='session')
+async def db(service_app):
 	# To make it easier to test, we keep the test restricted to firebase_tests
 	# Because of the current mutations on calls, we return it as a function.
 	try:
-		yield lambda: make_db(service_account=True).child('firebase_tests')
+		yield lambda: service_app.database().child('firebase_tests')
 	finally:
-		make_db(service_account=True).child('firebase_tests').remove()
-
+		await service_app.database().child('firebase_tests').remove()
 
 @pytest.fixture(scope='session')
 def email():
@@ -42,14 +54,12 @@ def email_2():
 	return TEST_USER_EMAIL_2
 
 @pytest.fixture(scope='session')
-def ds():
-	return make_ds()
-
+def ds(client_app):
+	return client_app.firestore()
 
 @pytest.fixture(scope='session')
-def ds_admin():
-	return make_ds(True)
-
+def ds_admin(service_app):
+	return service_app.firestore()
 
 @pytest.fixture(scope='session')
 def password():
@@ -60,10 +70,9 @@ def password_2():
 	return TEST_USER_PASSWORD_2
 
 @pytest.fixture(scope='session')
-def storage():
-	return make_storage()
-
+def storage(client_app):
+	return client_app.storage()
 
 @pytest.fixture(scope='session')
-def storage_admin():
-	return make_storage(service_account=True)
+def storage_admin(service_app):
+	return service_app.storage()

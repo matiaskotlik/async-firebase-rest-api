@@ -1,41 +1,45 @@
 <div align="center">
 
-   <h1> Firebase REST API </h1>
+   <h1> Async Firebase REST API </h1>
 
    <p>A simple python wrapper for <a href="https://firebase.google.com">Google's Firebase REST API's</a>.</p>
+   <p>This package is an async fork of <a href="https://github.com/AsifArmanRahman/firebase-rest-api">AsifArmanRahman/firebase-rest-api</a>.</p>
    <br>
 
 </div>
 
 <div align="center">
-   <a href="https://pepy.tech/project/firebase-rest-api"> 
-      <img alt="Total Downloads" src="https://static.pepy.tech/personalized-badge/firebase-rest-api?period=total&units=international_system&left_color=blue&right_color=grey&left_text=Downloads">
+   <a href="https://pepy.tech/project/async-firebase-rest-api"> 
+      <img alt="Total Downloads" src="https://static.pepy.tech/personalized-badge/async-firebase-rest-api?period=total&units=international_system&left_color=blue&right_color=grey&left_text=Downloads">
    </a>
 </div>
 
 <div align="center">
 
-   <a href="https://github.com/AsifArmanRahman/firebase-rest-api/actions/workflows/build.yml"> 
-      <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/AsifArmanRahman/firebase-rest-api/build.yml?logo=GitHub">
+   <a href="https://github.com/matiaskotlik/async-firebase-rest-api/actions/workflows/build.yml"> 
+      <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/matiaskotlik/async-firebase-rest-api/build.yml?logo=GitHub">
    </a>
-   <a href="https://github.com/AsifArmanRahman/firebase-rest-api/actions/workflows/tests.yml">
-      <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/asifarmanrahman/firebase-rest-api/tests.yml?label=tests&logo=Pytest">
+   <a href="https://github.com/matiaskotlik/async-firebase-rest-api/actions/workflows/tests.yml">
+      <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/matiaskotlik/async-firebase-rest-api/tests.yml?label=tests&logo=Pytest">
    </a>
-   <a href="https://firebase-rest-api.readthedocs.io/en/latest/">
-      <img alt="Read the Docs" src="https://img.shields.io/readthedocs/firebase-rest-api?logo=Read%20the%20Docs&logoColor=white">
+
+   <a href="https://async-firebase-rest-api.readthedocs.io/en/latest/">
+
+      <img alt="Read the Docs" src="https://img.shields.io/readthedocs/async-firebase-rest-api?logo=Read%20the%20Docs&logoColor=white">
+
    </a>
-   <a href="https://codecov.io/gh/AsifArmanRahman/firebase-rest-api"> 
-      <img alt="CodeCov" src="https://codecov.io/gh/AsifArmanRahman/firebase-rest-api/branch/main/graph/badge.svg?token=N7TE1WVZ7W"> 
+   <a href="https://codecov.io/gh/matiaskotlik/async-firebase-rest-api"> 
+      <img alt="CodeCov" src="https://codecov.io/gh/matiaskotlik/async-firebase-rest-api/branch/main/graph/badge.svg?token=N7TE1WVZ7W"> 
    </a>
 
 </div>
 
 <div align="center">
-   <a href="https://pypi.org/project/firebase-rest-api/"> 
-      <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/firebase-rest-api?logo=python">
+   <a href="https://pypi.org/project/async-firebase-rest-api/"> 
+      <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/async-firebase-rest-api?logo=python">
    </a>
-   <a href="https://pypi.org/project/firebase-rest-api/"> 
-      <img alt="PyPI" src="https://img.shields.io/pypi/v/firebase-rest-api?logo=PyPI&logoColor=white">
+   <a href="https://pypi.org/project/async-firebase-rest-api/"> 
+      <img alt="PyPI" src="https://img.shields.io/pypi/v/async-firebase-rest-api?logo=PyPI&logoColor=white">
    </a>
 </div>
 
@@ -43,8 +47,8 @@
 
 ## Installation
 
-```python
-pip install firebase-rest-api
+```shell
+pip install async-firebase-rest-api
 ```
 
 
@@ -60,7 +64,7 @@ In order to use this library, you first need to go through the following steps:
 ### Example Usage
 
 ```python
-# Import Firebase REST API library
+# Import Async Firebase REST API library
 import firebase
 
 # Firebase configuration
@@ -82,8 +86,8 @@ app = firebase.initialize_app(config)
 auth = app.auth()
 
 # Create new user and sign in
-auth.create_user_with_email_and_password(email, password)
-user = auth.sign_in_with_email_and_password(email, password)
+await auth.create_user_with_email_and_password(email, password)
+user = await auth.sign_in_with_email_and_password(email, password)
 
 
 # Firebase Realtime Database
@@ -96,7 +100,7 @@ data = {
 }
 
 # Store data to Firebase Database
-db.child("users").push(data, user.get('idToken'))
+await db.child("users").push(data, user.get('idToken'))
 
 
 # Firebase Storage
@@ -106,5 +110,5 @@ storage = app.storage()
 file_path = 'static/img/example.png'
 
 # Store file to Firebase Storage
-storage.child(user.get('localId')).child('uploaded-picture.png').put(file_path, user.get('idToken'))
+await storage.child(user.get('localId')).child('uploaded-picture.png').put(file_path, user.get('idToken'))
 ```
