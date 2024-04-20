@@ -1,3 +1,22 @@
+# [2.1.0](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v2.0.1...v2.1.0) (2024-04-20)
+
+
+### Bug Fixes
+
+* allow concurrent test runs ([9db5272](https://github.com/matiaskotlik/async-firebase-rest-api/commit/9db5272a071b0ef99e79747a0f95ac09f207af7a))
+* allow concurrent test runs ([7e096ab](https://github.com/matiaskotlik/async-firebase-rest-api/commit/7e096ab3ae7f6a96a76105188984e69f132355e5))
+* disable facebook auth uri test ([9ea2d5a](https://github.com/matiaskotlik/async-firebase-rest-api/commit/9ea2d5a6ef890d87e64ab9d9311322a00d6f9b2b))
+* firestore tests ([40ad0c3](https://github.com/matiaskotlik/async-firebase-rest-api/commit/40ad0c38224a69fce391ce957af85891859f8c6c))
+* gha ([e7a0dd3](https://github.com/matiaskotlik/async-firebase-rest-api/commit/e7a0dd340e62d3abdbc256191b6129d14f6b9743))
+* gha ([0981abb](https://github.com/matiaskotlik/async-firebase-rest-api/commit/0981abb2b6e4d49ee7f80d34b1ed0295c6e71a79))
+
+
+### Features
+
+* interactive login ([94995c0](https://github.com/matiaskotlik/async-firebase-rest-api/commit/94995c00ec0d01147cb53d9b418c8bfd6e4a4ddd))
+
+
+
 ## [2.0.1](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v2.0.0...v2.0.1) (2024-04-20)
 
 
