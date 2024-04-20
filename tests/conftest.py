@@ -20,19 +20,19 @@ def event_loop():
 
 @pytest.fixture(scope='session')
 async def client_app():
-	yield initialize_app(config.SIMPLE_CONFIG)
+	yield initialize_app(config.SIMPLE_CONFIG, config.OAUTH_CONFIG)
 
 @pytest.fixture(scope='session')
 async def service_app():
-	yield initialize_app(config.SERVICE_CONFIG)
+	yield initialize_app(config.SERVICE_CONFIG, config.OAUTH_CONFIG)
 
 @pytest.fixture(scope='session')
 def auth(client_app):
-	return client_app.auth(config.OAUTH_CLIENT_ID, config.OAUTH_CLIENT_SECRET, config.OAUTH_CLIENT_REDIRECT_URI)
+	return client_app.auth()
 
 @pytest.fixture(scope='session')
 def auth_admin(service_app):
-	return service_app.auth(config.OAUTH_CLIENT_ID, config.OAUTH_CLIENT_SECRET, config.OAUTH_CLIENT_REDIRECT_URI)
+	return service_app.auth()
 
 @pytest.fixture(scope='session')
 async def db(service_app):

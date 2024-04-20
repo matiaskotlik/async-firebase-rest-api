@@ -18,17 +18,20 @@ from ._custom_requests import _custom_request
 from ._service_account_credentials import _service_account_creds_from_secret
 
 
-def initialize_app(config):
+def initialize_app(config, oauth_config):
 	"""Initializes and returns a new Firebase instance.
 
 	:type config: dict
 	:param config: Firebase configuration
 
+	:type oauth_config: dict
+	:param oauth_config: OAuth configuration
+
 	:return: A newly initialized instance of Firebase.
 	:rtype: Firebase
 	"""
 
-	return Firebase(config)
+	return Firebase(config, oauth_config)
 
 
 class Firebase:
@@ -38,7 +41,7 @@ class Firebase:
 	:param config: Firebase configuration
 	"""
 
-	def __init__(self, config):
+	def __init__(self, config, oauth_config):
 		""" Constructor """
 
 		self.api_key = config["apiKey"]
@@ -46,6 +49,7 @@ class Firebase:
 		self.database_url = config["databaseURL"]
 		self.project_id = config["projectId"]
 		self.storage_bucket = config["storageBucket"]
+		self.oauth_config = oauth_config
 
 		self.credentials = None
 		self.requests = _custom_request()
@@ -53,7 +57,7 @@ class Firebase:
 		if config.get("serviceAccount"):
 			self.credentials = _service_account_creds_from_secret(config['serviceAccount'])
 
-	def auth(self, client_id=None, client_secret=None, redirect_uri=None):
+	def auth(self):
 		"""Initializes and returns a new Firebase Authentication
 		instance.
 
@@ -67,7 +71,7 @@ class Firebase:
 		:rtype: Auth
 		"""
 
-		return Auth(self.api_key, self.credentials, self.requests, client_id, client_secret, redirect_uri)
+		return Auth(self.api_key, self.credentials, self.requests, self.oauth_config)
 
 	def database(self):
 		"""Initializes and returns a new Firebase Realtime Database

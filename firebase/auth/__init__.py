@@ -49,7 +49,7 @@ class Auth:
 
 	"""
 
-	def __init__(self, api_key, credentials, requests, client_id=None, client_secret=None, redirect_uri=None):
+	def __init__(self, api_key, credentials, requests, oauth_config=None):
 		""" Constructor method """
 
 		self.api_key = api_key
@@ -60,9 +60,10 @@ class Auth:
 		self.__code_verifier = None
 		self.__nonce = None
 
-		self.client_id = client_id
-		self.client_secret = client_secret
-		self.client_redirect_uri = redirect_uri
+		if oauth_config:
+			self.client_id = oauth_config['client_id']
+			self.client_secret = oauth_config['client_secret']
+			self.client_redirect_uri = oauth_config['redirect_uri']
 
 	async def interactive_login_with_provider(self, provider_id):
 		""" Interactive OAuth Login.
