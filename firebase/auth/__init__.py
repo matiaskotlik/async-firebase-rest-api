@@ -60,23 +60,23 @@ class Auth:
 		if client_secret:
 			self.client_secret = _load_client_secret(client_secret)
 
-	def authenticate_login_with_google(self):
+	async def authenticate_login_with_google(self):
 		""" Redirect the user to Google's OAuth 2.0 server to initiate 
 		the authentication and authorization process.
 
 		:return: Google Sign In URL
 		:rtype: str
 		"""
-		return self.create_authentication_uri('google.com')
+		return await self.create_authentication_uri('google.com')
 
-	def authenticate_login_with_facebook(self):
+	async def authenticate_login_with_facebook(self):
 		""" Redirect the user to Facebook's OAuth 2.0 server to
 		initiate the authentication and authorization process.
 
 		:return: Facebook Sign In URL
 		:rtype: str
 		"""
-		return self.create_authentication_uri('facebook.com')
+		return await self.create_authentication_uri('facebook.com')
 
 	async def create_authentication_uri(self, provider_id):
 		""" Creates an authentication URI for the given social
