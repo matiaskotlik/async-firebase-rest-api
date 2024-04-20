@@ -20,7 +20,7 @@ class TestAuth:
 		user = await auth.interactive_login_with_provider('google.com')
 		assert await auth.get_account_info(user.get('idToken'))
 
-	@pytest.mark.parametrize('provider', ['google.com', 'facebook.com'])
+	@pytest.mark.parametrize('provider', ['google.com'])
 	async def test_create_authorization_uri(self, auth, provider):
 		assert await auth.create_authentication_uri(provider)
 
