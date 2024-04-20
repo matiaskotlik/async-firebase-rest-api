@@ -1,3 +1,12 @@
+## [2.1.1](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v2.1.0...v2.1.1) (2024-04-20)
+
+
+### Bug Fixes
+
+* change config format ([9abb58a](https://github.com/matiaskotlik/async-firebase-rest-api/commit/9abb58a492c18c3129fcac7d23e4a13c2cfe35be))
+
+
+
 # [2.1.0](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v2.0.1...v2.1.0) (2024-04-20)
 
 
