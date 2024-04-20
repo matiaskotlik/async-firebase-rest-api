@@ -201,6 +201,21 @@ class Collection:
 
 			return doc_id.pop()
 
+	def collection(self, collection_id):
+		""" A reference to a collection in a Firestore database.
+
+
+		:type collection_id: str
+		:param collection_id: An ID of collection in firestore.
+
+
+		:return: Reference to a collection.
+		:rtype: Collection
+		"""
+
+		self._path.append(collection_id)
+		return Collection(self._path, api_key=self._api_key, credentials=self._credentials, project_id=self._project_id, requests=self._requests)
+
 	def document(self, document_id):
 		""" A reference to a document in a collection.
 

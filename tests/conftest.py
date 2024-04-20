@@ -57,11 +57,11 @@ def email_2():
 
 @pytest.fixture(scope='session')
 def ds(client_app):
-	return client_app.firestore()
+	return client_app.firestore().collection(f'test_{rand_str()}')
 
 @pytest.fixture(scope='session')
 def ds_admin(service_app):
-	return service_app.firestore()
+	return service_app.firestore().collection(f'test_{rand_str()}')
 
 @pytest.fixture(scope='session')
 def password():
