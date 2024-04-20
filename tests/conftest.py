@@ -1,5 +1,8 @@
 #   Copyright (c) 2022 Asif Arman Rahman
 #   Licensed under MIT (https://github.com/AsifArmanRahman/firebase/blob/main/LICENSE)
+import random
+import string
+import uuid
 
 # --------------------------------------------------------------------------------------
 
@@ -9,10 +12,6 @@ import asyncio
 
 from firebase import initialize_app
 from tests import config
-from tests.config import (
-	TEST_USER_EMAIL, TEST_USER_PASSWORD,
-	TEST_USER_EMAIL_2, TEST_USER_PASSWORD_2
-)
 
 @pytest.fixture(scope='session')
 def event_loop():
@@ -45,13 +44,16 @@ async def db(service_app):
 	finally:
 		await service_app.database().child('firebase_tests').remove()
 
+def rand_str(length=12):
+	return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
 @pytest.fixture(scope='session')
 def email():
-	return TEST_USER_EMAIL
+	return f'{rand_str()}@gmail.com'
 
 @pytest.fixture(scope='session')
 def email_2():
-	return TEST_USER_EMAIL_2
+	return f'{rand_str()}@gmail.com'
 
 @pytest.fixture(scope='session')
 def ds(client_app):
@@ -63,11 +65,11 @@ def ds_admin(service_app):
 
 @pytest.fixture(scope='session')
 def password():
-	return TEST_USER_PASSWORD
+	return rand_str()
 
 @pytest.fixture(scope='session')
 def password_2():
-	return TEST_USER_PASSWORD_2
+	return rand_str()
 
 @pytest.fixture(scope='session')
 def storage(client_app):
