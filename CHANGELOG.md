@@ -1,3 +1,13 @@
+## [2.0.1](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v2.0.0...v2.0.1) (2024-04-20)
+
+
+### Bug Fixes
+
+* fix google and fb signin ([0d62775](https://github.com/matiaskotlik/async-firebase-rest-api/commit/0d627751bd477d7ee0f1ccd968763b051d39d2c0))
+* readme ([becbf9c](https://github.com/matiaskotlik/async-firebase-rest-api/commit/becbf9ce0256f254d742aebabb1693fe17058ca9))
+
+
+
 # [2.0.0](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v1.11.0...v2.0.0) (2024-04-19)
 
 
