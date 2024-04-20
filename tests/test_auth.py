@@ -8,7 +8,7 @@ import os
 import pytest
 import httpx
 
-interactive = pytest.mark.skipif(os.environ.get('GITHUB_ACTION'), reason="Interactive test")
+interactive = pytest.mark.skipif(bool(os.environ.get('GITHUB_ACTION')), reason="Interactive test")
 
 class TestAuth:
 
