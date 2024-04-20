@@ -30,11 +30,11 @@ async def service_app():
 
 @pytest.fixture(scope='session')
 def auth(client_app):
-	return client_app.auth()
+	return client_app.auth(config.OAUTH_CLIENT_ID, config.OAUTH_CLIENT_SECRET, config.OAUTH_CLIENT_REDIRECT_URI)
 
 @pytest.fixture(scope='session')
 def auth_admin(service_app):
-	return service_app.auth()
+	return service_app.auth(config.OAUTH_CLIENT_ID, config.OAUTH_CLIENT_SECRET, config.OAUTH_CLIENT_REDIRECT_URI)
 
 @pytest.fixture(scope='session')
 async def db(service_app):

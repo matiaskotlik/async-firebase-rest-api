@@ -1,5 +1,6 @@
 #   Copyright (c) 2022 Asif Arman Rahman
 #   Licensed under MIT (https://github.com/AsifArmanRahman/firebase/blob/main/LICENSE)
+import os
 
 # --------------------------------------------------------------------------------------
 
@@ -7,11 +8,21 @@
 import pytest
 import httpx
 
+interactive = pytest.mark.skipif(os.environ.get('GITHUB_ACTION'), reason="Interactive test")
 
 class TestAuth:
 
 	user = None
 	anonymous_user = None
+
+	@interactive
+	async def test_interactive_google_login(self, auth):
+		user = await auth.interactive_login_with_provider('google.com')
+		assert await auth.get_account_info(user.get('idToken'))
+
+	@pytest.mark.parametrize('provider', ['google.com', 'facebook.com'])
+	async def test_create_authorization_uri(self, auth, provider):
+		assert await auth.create_authentication_uri(provider)
 
 	async def test_sign_in_with_non_existing_account_email_and_password(self, auth, email, password):
 		with pytest.raises(httpx.HTTPError) as exc_info:
@@ -68,7 +79,6 @@ class TestAuth:
 	@pytest.mark.xfail
 	async def test_verify_password_reset_code(self, auth):
 		assert await auth.verify_password_reset_code('123456', 'NewTestPassword123')
-
 
 	async def test_change_email(self, auth, email_2, password):
 		with pytest.raises(httpx.HTTPError) as exc_info:

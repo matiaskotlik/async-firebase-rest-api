@@ -14,17 +14,21 @@ A simple python wrapper for Google's
 
 import json
 import math
+import webbrowser
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
 import pkce
 import random
 import datetime
 import python_jwt as jwt
 from hashlib import sha256
 from jwcrypto.jwk import JWK
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 from google.auth.transport.requests import Request
 from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat
 
 from firebase._exception import raise_detailed_error
+from firebase.auth.oauth_flow import start_oauth_flow
 
 
 class Auth:
@@ -45,38 +49,41 @@ class Auth:
 
 	"""
 
-	def __init__(self, api_key, credentials, requests, client_secret=None):
+	def __init__(self, api_key, credentials, requests, client_id=None, client_secret=None, redirect_uri=None):
 		""" Constructor method """
 
 		self.api_key = api_key
 		self.credentials = credentials
 		self.requests = requests
 
-		self.provider_id = None
 		self.session_id = None
 		self.__code_verifier = None
 		self.__nonce = None
 
-		if client_secret:
-			self.client_secret = _load_client_secret(client_secret)
+		self.client_id = client_id
+		self.client_secret = client_secret
+		self.client_redirect_uri = redirect_uri
 
-	async def authenticate_login_with_google(self):
-		""" Redirect the user to Google's OAuth 2.0 server to initiate 
-		the authentication and authorization process.
+	async def interactive_login_with_provider(self, provider_id):
+		""" Interactive OAuth Login.
 
-		:return: Google Sign In URL
-		:rtype: str
+		:type provider_id: str
+		:param provider_id: The IdP ID. For white listed IdPs it's a
+			short domain name e.g. 'google.com', 'aol.com', 'live.net'
+			and 'yahoo.com'. For other OpenID IdPs it's the OP
+			identifier.
+
+		:return: User account info and Firebase Auth Tokens.
+		:rtype: dict
 		"""
-		return await self.create_authentication_uri('google.com')
 
-	async def authenticate_login_with_facebook(self):
-		""" Redirect the user to Facebook's OAuth 2.0 server to
-		initiate the authentication and authorization process.
+		request_uri = await self.create_authentication_uri(provider_id)
+		webbrowser.open(request_uri)
+		code = await start_oauth_flow(self.client_redirect_uri)
+		if not code:
+			raise ValueError("Authorization failed")
 
-		:return: Facebook Sign In URL
-		:rtype: str
-		"""
-		return await self.create_authentication_uri('facebook.com')
+		return await self.sign_in_with_oauth_credential(provider_id, code)
 
 	async def create_authentication_uri(self, provider_id):
 		""" Creates an authentication URI for the given social
@@ -106,9 +113,9 @@ class Auth:
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/createAuthUri?key={0}".format(self.api_key)
 
 		data = {
-			"clientId": self.client_secret['client_id'],
+			"clientId": self.client_id,
 			"providerId": provider_id,
-			"continueUri": self.client_secret['redirect_uris'][0],
+			"continueUri": self.client_redirect_uri,
 		}
 
 		self.__nonce = "".join(random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") for _ in range(20))
@@ -127,7 +134,6 @@ class Auth:
 
 		raise_detailed_error(request_object)
 
-		self.provider_id = provider_id
 		self.session_id = request_object.json()['sessionId']
 
 		return request_object.json()['authUri']
@@ -442,7 +448,7 @@ class Auth:
 
 		return request_object.json()
 
-	async def sign_in_with_oauth_credential(self, oauth2callback_url):
+	async def sign_in_with_oauth_credential(self, provider_id, code):
 		""" Sign In With OAuth credential.
 
 		| For more details:
@@ -454,10 +460,11 @@ class Auth:
 		.. _section-sign-in-with-oauth-credential:
 			https://firebase.google.com/docs/reference/rest/auth#section-sign-in-with-oauth-credential
 
+		:param: provider_id: The provider ID.
+		:type provider_id: str
 
-		:type oauth2callback_url: str
-		:param oauth2callback_url: The URL redirected to after
-			successful authorization from the provider.
+		:param code: The OAuth code to sign in.
+		:type code: str
 
 		:return: User account info and Firebase Auth Tokens.
 		:rtype: dict
@@ -465,11 +472,11 @@ class Auth:
 
 		request_ref = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyAssertion?key={0}".format(self.api_key)
 
-		token = self._token_from_auth_url(oauth2callback_url)
+		token = await self._token_from_auth_url(provider_id, code)
 		data = {
-			'postBody': f"providerId={self.provider_id}&{token['type']}={token['value']}&nonce={self.__nonce}",
+			'postBody': f"providerId={provider_id}&{token['type']}={token['value']}&nonce={self.__nonce}",
 			'autoCreate': 'true',
-			'requestUri': self.client_secret['redirect_uris'][0],
+			'requestUri': self.client_redirect_uri,
 			'sessionId': self.session_id,
 			'returnSecureToken': 'true',
 			'returnRefreshToken': 'true',
@@ -483,37 +490,30 @@ class Auth:
 
 		return _token_expire_time(request_object.json())
 
-	async def _token_from_auth_url(self, url):
+	async def _token_from_auth_url(self, provider_id, code):
 		""" Fetch tokens using the authorization code from given URL.
-
-
-		:type url: str
-		:param url: The URL redirected to after successful
-			authorization from the provider.
 
 
 		:return: The OAuth credential (an ID token).
 		:rtype: dict
 		"""
 
-		request_ref = _token_host(self.provider_id)
-
-		auth_url_values = parse_qs(url[url.index('?') + 1:])
+		request_ref = _token_host(provider_id)
 
 		data = {
-			'client_id': self.client_secret['client_id'],
-			'client_secret': self.client_secret['client_secret'],
-			'code': auth_url_values['code'][0],
-			'redirect_uri': self.client_secret['redirect_uris'][0],
+			'client_id': self.client_id,
+			'client_secret': self.client_secret,
+			'code': code,
+			'redirect_uri': self.client_redirect_uri,
 		}
 
-		if self.provider_id == 'google.com':
+		if provider_id == 'google.com':
 			data['grant_type'] = 'authorization_code'
-		elif self.provider_id == 'facebook.com':
+		elif provider_id == 'facebook.com':
 			data['code_verifier'] = self.__code_verifier
 
 		headers = {"content-type": "application/x-www-form-urlencoded; charset=UTF-8"}
-		request_object = await self.requests.post(request_ref, headers=headers, json=data)
+		request_object = await self.requests.post(request_ref, headers=headers, data=data)
 
 		raise_detailed_error(request_object)
 
@@ -521,7 +521,7 @@ class Auth:
 			'type': 'id_token',
 			'value': request_object.json()['id_token'],
 		}
-	
+
 	async def change_email(self, id_token, email):
 		""" Changes a user's email
 
@@ -549,7 +549,7 @@ class Auth:
 		raise_detailed_error(request_object)
 
 		return request_object.json()
-	
+
 	async def change_password(self, id_token, password):
 		""" Changes a user's password
 
@@ -670,34 +670,6 @@ class Auth:
 		return claims
 
 
-def _load_client_secret(secret):
-	""" Load social providers' client secret from file if file path
-	provided.
-
-	This function also restructures the dict object to make it
-	compatible for usage.
-
-
-	:type secret: str or dict
-	:param secret: File path to or the dict object from social client
-		secret file.
-
-	:return: social client secret
-	:rtype: dict
-	"""
-
-	if type(secret) is str:
-		with open(secret) as file:
-			secret = json.load(file)
-
-	# Google client secrets are stored within 'web' key
-	# We will remove the key, and replace it with the dict type value of it
-	if secret.get('web'):
-		secret = secret['web']
-
-	return secret
-
-
 def _token_expire_time(user):
 	""" Adds expire time of the token in the token dictionary.
 
@@ -706,7 +678,7 @@ def _token_expire_time(user):
 
 	:type user: dict
 	:param user: The token dictionary received after signing in users.
-	
+
 	:return: Token dictionary with an ``expiresAt`` key.
 	:rtype: dict
 	"""

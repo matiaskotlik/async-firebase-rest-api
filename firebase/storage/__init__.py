@@ -138,18 +138,15 @@ class Storage:
 
 		if token:
 			headers = {"Authorization": "Firebase " + token}
-			return await asyncio.get_event_loop().run_in_executor(
-				None, upload_file, request_ref, file_object, headers)
+			return await asyncio.to_thread(upload_file, request_ref, file_object, headers)
 
 		elif self.credentials:
 			blob = self.bucket.blob(path)
 			upload_func = blob.upload_from_filename if isinstance(file, str) else blob.upload_from_file
-			return await asyncio.get_event_loop().run_in_executor(
-				None, upload_func, file)
+			return await asyncio.to_thread(upload_func, file)
 
 		else:
-			return await asyncio.get_event_loop().run_in_executor(
-				None, upload_file, request_ref, file_object)
+			return await asyncio.to_thread(upload_file, request_ref, file_object)
 
 	async def delete(self, token=None):
 		""" Delete file from storage.
@@ -179,7 +176,7 @@ class Storage:
 			path = path[1:]
 
 		if self.credentials:
-			await asyncio.get_event_loop().run_in_executor(None, self.bucket.delete_blob, path)
+			await asyncio.to_thread(self.bucket.delete_blob, path)
 		else:
 			request_ref = self.storage_bucket + "/o?name={0}".format(path)
 
@@ -223,17 +220,15 @@ class Storage:
 			if path.startswith('/'):
 				path = path[1:]
 
-			blob = await asyncio.get_event_loop().run_in_executor(None, self.bucket.get_blob, path)
+			blob = await asyncio.to_thread(self.bucket.get_blob, path)
 			if blob is not None:
-				await asyncio.get_event_loop().run_in_executor(None, blob.download_to_filename, filename)
+				await asyncio.to_thread(blob.download_to_filename, filename)
 
 		elif token:
 			headers = {"Authorization": "Firebase " + token}
-			await asyncio.get_event_loop().run_in_executor(
-				None, download_file, await self.get_url(token), filename, headers)
+			await asyncio.to_thread(download_file, await self.get_url(token), filename, headers)
 		else:
-			await asyncio.get_event_loop().run_in_executor(
-				None, download_file, await self.get_url(), filename)
+			await asyncio.to_thread(download_file, await self.get_url(), filename)
 
 	async def get_url(self, token=None, expiration_hour=24):
 		""" Fetches URL for file.
