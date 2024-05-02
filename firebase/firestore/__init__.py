@@ -11,7 +11,7 @@ A simple python wrapper for Google's `Firebase Cloud Firestore REST API`_
 .. _Firebase Cloud Firestore REST API:
 	https://firebase.google.com/docs/firestore/reference/rest
 """
-
+import asyncio
 from math import ceil
 from proto.message import Message
 from google.cloud.firestore import Client
@@ -268,7 +268,7 @@ class Collection:
 		return self
 
 	async def get(self, token=None):
-		""" Returns a list of dict's containing document ID and the
+		""" Returns a dict mapping document IDs to the
 		data stored within them.
 
 
@@ -277,19 +277,19 @@ class Collection:
 			to :data:`None`.
 
 
-		:return: A list of document ID's with the data they possess.
-		:rtype: list
+		:return: A dict of document ID's to data.
+		:rtype: dict
 		"""
 
-		docs = []
+		docs = {}  # dict will preserve insertion order since python3.7(6)
 
 		if self._credentials:
 			db_ref = self._build_query()
 
-			results = db_ref.get()
+			results = await asyncio.to_thread(db_ref.get())
 
 			for result in results:
-				docs.append({result.id: result.to_dict()})
+				docs[result.id] = result.to_dict()
 
 		else:
 
@@ -325,7 +325,7 @@ class Collection:
 			if isinstance(response.json(), dict):
 				for doc in response.json()['documents']:
 					doc_id = doc['name'].split('/')
-					docs.append({doc_id.pop(): _from_datastore({'fields': doc['fields']})})
+					docs[doc_id.pop()] = _from_datastore({'fields': doc['fields']})
 
 			elif isinstance(response.json(), list):
 				for doc in response.json():
@@ -337,10 +337,10 @@ class Collection:
 							fields = doc['document']['fields']
 
 						doc_id = doc['document']['name'].split('/')
-						docs.append({doc_id.pop(): _from_datastore({'fields': fields})})
+						docs[doc_id.pop()] = _from_datastore({'fields': fields})
 
 			if self._is_limited_to_last:
-				docs = list(reversed(list(docs)))
+				docs = dict(reversed(docs.items()))
 
 		return docs
 
@@ -658,18 +658,18 @@ class Document:
 
 			raise_detailed_error(response)
 
-	async def get(self, field_paths=None, token=None):
+	async def get(self, token=None, field_paths=None):
 		""" Read data from a document in firestore.
 
+
+		:type token: str
+		:param token: (Optional) Firebase Auth User ID Token, defaults
+			to :data:`None`.
 
 		:type field_paths: list
 		:param field_paths: (Optional) A list of field paths
 			(``.``-delimited list of field names) to filter data, and
 			return the filtered values only, defaults
-			to :data:`None`.
-
-		:type token: str
-		:param token: (Optional) Firebase Auth User ID Token, defaults
 			to :data:`None`.
 
 
