@@ -1,3 +1,12 @@
+# [2.2.0](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v2.1.1...v2.2.0) (2024-10-25)
+
+
+### Features
+
+* new api ([f9b5380](https://github.com/matiaskotlik/async-firebase-rest-api/commit/f9b5380caa65c3dab83cc34ec61bcebab2f95758))
+
+
+
 ## [2.1.1](https://github.com/matiaskotlik/async-firebase-rest-api/compare/v2.1.0...v2.1.1) (2024-04-20)
 
 
