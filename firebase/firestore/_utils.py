@@ -1,4 +1,4 @@
-
+import random
 #   Copyright (c) 2022 Asif Arman Rahman
 #   Licensed under MIT (https://github.com/AsifArmanRahman/firebase/blob/main/LICENSE)
 
@@ -9,6 +9,7 @@ from datetime import datetime
 from base64 import b64encode, b64decode
 from google.protobuf.json_format import MessageToDict
 from google.cloud.firestore_v1._helpers import GeoPoint
+from google.cloud.firestore_v1.transforms import Sentinel
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
 
 
@@ -189,6 +190,11 @@ def _encode_datastore_value(value):
 
 	elif isinstance(value, GeoPoint):
 		return {'geoPointValue': MessageToDict(value.to_protobuf())}
+
 	else:
 
 		raise TypeError("Cannot convert to a Firestore Value", value, "Invalid type", type(value))
+
+def _generate_firestore_id():
+	chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+	return ''.join(random.choice(chars) for _ in range(20))

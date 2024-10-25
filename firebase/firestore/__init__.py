@@ -12,6 +12,7 @@ A simple python wrapper for Google's `Firebase Cloud Firestore REST API`_
 	https://firebase.google.com/docs/firestore/reference/rest
 """
 import asyncio
+import os
 from math import ceil
 from proto.message import Message
 from google.cloud.firestore import Client
@@ -19,10 +20,12 @@ from google.cloud.firestore_v1._helpers import *
 from google.cloud.firestore_v1.query import Query
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.base_query import _enum_from_direction
+from google.cloud.firestore import FieldFilter
 
-from ._utils import _from_datastore, _to_datastore
+from ._utils import _from_datastore, _to_datastore, _generate_firestore_id
 from firebase._exception import raise_detailed_error
 
+FIRESTORE_EMULATOR_HOST = os.getenv('FIRESTORE_EMULATOR_HOST')
 
 class Firestore:
 	""" Firebase Firestore Service
@@ -94,7 +97,10 @@ class Collection:
 		self._requests = requests
 
 		self._base_path = f"projects/{self._project_id}/databases/(default)/documents"
-		self._base_url = f"https://firestore.googleapis.com/v1/{self._base_path}"
+		if FIRESTORE_EMULATOR_HOST:
+			self._base_url = f"http://{FIRESTORE_EMULATOR_HOST}/v1/{self._base_path}"
+		else:
+			self._base_url = f"https://firestore.googleapis.com/v1/{self._base_path}"
 
 		if self._credentials:
 			self.__datastore = Client(credentials=self._credentials, project=self._project_id)
@@ -137,7 +143,7 @@ class Collection:
 				_query = _query.start_at(val)
 			elif key == 'where':
 				for q in val:
-					_query = _query.where(q[0], q[1], q[2])
+					_query = _query.where(filter=q)
 
 		if not self._credentials and _query._limit_to_last:
 
@@ -175,31 +181,9 @@ class Collection:
 		:rtype: str
 		"""
 
-		path = self._path.copy()
-		self._path.clear()
-
-		if self._credentials:
-			db_ref = _build_db(self.__datastore, path)
-
-			response = db_ref.add(data)
-
-			return response[1].id
-
-		else:
-			req_ref = f"{self._base_url}/{'/'.join(path)}?key={self._api_key}"
-
-			if token:
-				headers = {"Authorization": "Firebase " + token}
-				response = await self._requests.post(req_ref, headers=headers, json=_to_datastore(data))
-
-			else:
-				response = await self._requests.post(req_ref, json=_to_datastore(data))
-
-			raise_detailed_error(response)
-
-			doc_id = response.json()['name'].split('/')
-
-			return doc_id.pop()
+		doc_id = _generate_firestore_id()
+		await self.document(doc_id).set(data, token)
+		return doc_id
 
 	def collection(self, collection_id):
 		""" A reference to a collection in a Firestore database.
@@ -296,7 +280,10 @@ class Collection:
 			body = None
 
 			if len(self._query) > 0:
-				req_ref = f"{self._base_url}/{'/'.join(self._path[:-1])}:runQuery?key={self._api_key}"
+				query_path = '/'.join(self._path[:-1])
+				if query_path:
+					query_path = f"/{query_path}"
+				req_ref = f"{self._base_url}{query_path}:runQuery?key={self._api_key}"
 
 				body = {
 					"structuredQuery": json.loads(Message.to_json(self._build_query()._to_protobuf()))
@@ -306,7 +293,7 @@ class Collection:
 				req_ref = f"{self._base_url}/{'/'.join(self._path)}?key={self._api_key}"
 
 			if token:
-				headers = {"Authorization": "Firebase " + token}
+				headers = {"Authorization": "Bearer " + token}
 
 				if body:
 					response = await self._requests.post(req_ref, headers=headers, json=body)
@@ -374,7 +361,7 @@ class Collection:
 			req_ref = f"{self._base_url}/{'/'.join(path)}?key={self._api_key}"
 
 			if token:
-				headers = {"Authorization": "Firebase " + token}
+				headers = {"Authorization": "Bearer " + token}
 				response = await self._requests.get(req_ref, headers=headers)
 
 			else:
@@ -562,7 +549,7 @@ class Collection:
 		if self._query.get('where'):
 			arr = self._query['where']
 
-		arr.append([field_path, op_string, value])
+		arr.append(FieldFilter(field_path, op_string, value))
 
 		self._query['where'] = arr
 
@@ -600,7 +587,10 @@ class Document:
 		self._requests = requests
 
 		self._base_path = f"projects/{self._project_id}/databases/(default)/documents"
-		self._base_url = f"https://firestore.googleapis.com/v1/{self._base_path}"
+		if FIRESTORE_EMULATOR_HOST:
+			self._base_url = f"http://{FIRESTORE_EMULATOR_HOST}/v1/{self._base_path}"
+		else:
+			self._base_url = f"https://firestore.googleapis.com/v1/{self._base_path}"
 
 		if self._credentials:
 			self.__datastore = Client(credentials=self._credentials, project=self._project_id)
@@ -650,7 +640,7 @@ class Document:
 			req_ref = f"{self._base_url}/{'/'.join(path)}?key={self._api_key}"
 
 			if token:
-				headers = {"Authorization": "Firebase " + token}
+				headers = {"Authorization": "Bearer " + token}
 				response = await self._requests.delete(req_ref, headers=headers)
 
 			else:
@@ -699,7 +689,7 @@ class Document:
 			req_ref = f"{self._base_url}/{'/'.join(path)}?{mask}key={self._api_key}"
 
 			if token:
-				headers = {"Authorization": "Firebase " + token}
+				headers = {"Authorization": "Bearer " + token}
 				response = await self._requests.get(req_ref, headers=headers)
 
 			else:
@@ -750,7 +740,7 @@ class Document:
 			}
 
 			if token:
-				headers = {"Authorization": "Firebase " + token}
+				headers = {"Authorization": "Bearer " + token}
 				response = await self._requests.post(req_ref, headers=headers, json=body)
 
 			else:
@@ -788,7 +778,7 @@ class Document:
 			}
 
 			if token:
-				headers = {"Authorization": "Firebase " + token}
+				headers = {"Authorization": "Bearer " + token}
 				response = await self._requests.post(req_ref, headers=headers, json=body)
 
 			else:

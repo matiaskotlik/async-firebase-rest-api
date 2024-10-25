@@ -137,7 +137,7 @@ class Storage:
 		request_ref = self.storage_bucket + "/o?name={0}".format(path)
 
 		if token:
-			headers = {"Authorization": "Firebase " + token}
+			headers = {"Authorization": "Bearer " + token}
 			return await asyncio.to_thread(upload_file, request_ref, file_object, headers)
 
 		elif self.credentials:
@@ -181,7 +181,7 @@ class Storage:
 			request_ref = self.storage_bucket + "/o?name={0}".format(path)
 
 			if token:
-				headers = {"Authorization": "Firebase " + token}
+				headers = {"Authorization": "Bearer " + token}
 				request_object = await self.requests.delete(request_ref, headers=headers)
 			else:
 				request_object = await self.requests.delete(request_ref)
@@ -225,7 +225,7 @@ class Storage:
 				await asyncio.to_thread(blob.download_to_filename, filename)
 
 		elif token:
-			headers = {"Authorization": "Firebase " + token}
+			headers = {"Authorization": "Bearer " + token}
 			await asyncio.to_thread(download_file, await self.get_url(token), filename, headers)
 		else:
 			await asyncio.to_thread(download_file, await self.get_url(), filename)
@@ -263,7 +263,7 @@ class Storage:
 		elif token:
 
 			# retrieve download tokens first
-			headers = {"Authorization": "Firebase " + token}
+			headers = {"Authorization": "Bearer " + token}
 			request_ref = "{0}/o/{1}".format(self.storage_bucket, quote(path, safe=''))
 			request_object = await self.requests.get(request_ref, headers=headers)
 
